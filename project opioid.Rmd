@@ -1,0 +1,169 @@
+```{r}
+rm(list = ls())
+```
+```{r}
+library(SpatioTemporal)
+library(dplyr)
+library(readr)
+library(ggplot2)
+library(sf)
+library(tmap)
+```
+## Load data
+```{r}
+load("data.rds")
+### opioid_used_per_person = the amount of opioid used by person in each county from 2006-2012
+### coordinates: the coordinates of 92 counties in Indiana
+### spatialdata: the spatial predictors
+### SpatialTemporal: the Spatial temporal predictors
+```
+
+```{r}
+### create train data from 2006-2011
+temp<-opioid_used_per_person[7,]
+opioid_used_per_person_train<-opioid_used_per_person
+opioid_used_per_person_train[7,]<- rep(NA,90)
+```
+
+#### MODEL WITH ALL PREDICTORS
+```{r}
+#NOW WE CREATE ST DATA
+STdata<-createSTdata(obs= opioid_used_per_person_train, covars = spatialdata, SpatioTemporal = SpatialTemporal)
+STdata$covars<-inner_join(STdata$covars,coordinates,"ID")
+#change X and Y to numeric value
+STdata$covars$x<-as.numeric(substring(STdata$covars$x,2))*100
+STdata$covars$y<--as.numeric(substring(STdata$covars$y,2))*100
+
+LUR <- list(~female_rate+white_rate+ some_college+bachelor_and_up+high_school_diploma+young_people+middle_age+age_60_up
+)
+ST<-c("median_household_income","poverty_rate", "unemployment_rate")
+STmodel<-createSTmodel(STdata, LUR=LUR, ST=ST, locations=list(long.lat=c("x","y")))
+```
+
+
+```{r}
+#create STmodel for testing
+STdata_test<-createSTdata(obs= opioid_used_per_person, covars = spatialdata, SpatioTemporal = SpatialTemporal)
+STdata_test$covars<-inner_join(STdata_test$covars,coordinates,"ID")
+#change X and Y to numeric value
+STdata_test$covars$x<-as.numeric(substring(STdata_test$covars$x,2))*100
+STdata_test$covars$y<--as.numeric(substring(STdata_test$covars$y,2))*100
+STmodel_test<-createSTmodel(STdata_test, LUR=LUR, ST=ST, locations=list(long.lat=c("x","y")))
+```
+
+
+```{r}
+### specified some initial parameters for optimization
+model.dim<-loglikeSTdim(STmodel)
+str(model.dim)
+x.init <- cbind(c( rep(1, model.dim$nparam.cov-1), 0),
+c( rep(c(1,-3), model.dim$m+1), 0))
+```
+
+
+
+```{r}
+###### optimization
+loglikeSTnames(STmodel, all=FALSE)
+rownames(x.init) <- loglikeSTnames(STmodel, all=FALSE)
+est.STmodel <- estimate(STmodel, x.init,type="p", hessian.all=TRUE)
+```
+```{r}
+### model parameters
+names(est.STmodel)
+est.STmodel$res.best
+```
+
+
+
+
+
+
+
+
+```{r}
+### prediction for year 2012
+pred.ST.model <- predict(STmodel_test, est.STmodel,
+pred.var=T)
+```
+
+
+```{r}
+#### MSE of prediction in 2012 to actual data
+Yhat<-pred.ST.model$EX[7,][c(-91,-92)]
+Y<- opioid_used_per_person[7,]
+Yhat<-Yhat[order(names(Yhat))]
+Y<-Y[order(names(Y))]
+MSE<-mean((Yhat-Y)^2)
+MSE
+```
+
+###### BEST MODEL
+```{r}
+#NOW WE CREATE ST DATA
+STdata<-createSTdata(obs= opioid_used_per_person_train, covars = spatialdata, SpatioTemporal = SpatialTemporal)
+STdata$covars<-inner_join(STdata$covars,coordinates,"ID")
+#change X and Y to numeric value
+STdata$covars$x<-as.numeric(substring(STdata$covars$x,2))*100
+STdata$covars$y<--as.numeric(substring(STdata$covars$y,2))*100
+
+LUR <- list(~white_rate)
+ST<-c("unemployment_rate")
+STmodel<-createSTmodel(STdata, LUR=LUR, ST=ST, locations=list(long.lat=c("x","y")))
+#STmodel<-createSTmodel(STdata, LUR=LUR, ST=c("poverty_rate"), locations=list(long.lat=c("x","y")))
+```
+
+
+
+```{r}
+#create STmodel for testing
+STdata_test<-createSTdata(obs= opioid_used_per_person, covars = spatialdata, SpatioTemporal = SpatialTemporal)
+STdata_test$covars<-inner_join(STdata_test$covars,coordinates,"ID")
+#change X and Y to numeric value
+STdata_test$covars$x<-as.numeric(substring(STdata_test$covars$x,2))*100
+STdata_test$covars$y<--as.numeric(substring(STdata_test$covars$y,2))*100
+STmodel_test<-createSTmodel(STdata_test, LUR=LUR, ST=ST, locations=list(long.lat=c("x","y")))
+```
+
+
+```{r}
+model.dim<-loglikeSTdim(STmodel)
+str(model.dim)
+x.init <- cbind(c( rep(1, model.dim$nparam.cov-1), 0),
+c( rep(c(1,-3), model.dim$m+1), 0))
+```
+
+
+
+```{r}
+loglikeSTnames(STmodel, all=FALSE)
+rownames(x.init) <- loglikeSTnames(STmodel, all=FALSE)
+est.STmodel <- estimate(STmodel, x.init,type="p", hessian.all=TRUE)
+```
+```{r}
+names(est.STmodel)
+est.STmodel$res.best
+```
+
+
+
+
+
+
+```{r}
+pred.ST.model <- predict(STmodel_test, est.STmodel,
+pred.var=T)
+```
+
+
+
+
+```{r}
+Yhat<-pred.ST.model$EX[7,][c(-91,-92)]
+Y<- opioid_used_per_person[7,]
+Yhat<-Yhat[order(names(Yhat))]
+Y<-Y[order(names(Y))]
+MSE<-mean((Yhat-Y)^2)
+MSE
+```
+
