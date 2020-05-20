@@ -2,7 +2,8 @@
 In this project, I use the opioid sales data from the [Washington Post](https://www.washingtonpost.com/graphics/2019/investigations/dea-pain-pill-database/) to find out what risk factors are significantly associate with opioid use in Indiana  <br />
 The assocciated risks factor are mainly collected in [bureau census](https://www.census.gov/library/publications/2011/compendia/usa-counties-2011.html#POP) and a few other sources.  <br />
 By using the spatial temporal model for data from 2006-2011, I was able to find that unemployment rate and white proportion are the most significant risk factors. Counties that have higher unemployment rate consume higher opioid on average, and counties that have higher white population consume less opioid on average.  <br />
-Using the model, I also predicted the average opioid use in Indiana in 2012 and get MSE of 28.2. <br />
+Using the model, I also predicted the average opioid use in Indiana in 2012 and get MSE of 28.2. The prediction the model produced is shown below.  <br />
+![](prediction%20vs%20actual%20data%20in%202012.png)
 The detailed report is in file [report.docx](https://github.com/oceancode1997/opioid-use-in-Indiana/blob/master/report.docx?raw=true) <br />
 The data I collected is in file [data.rds](https://github.com/oceancode1997/opioid-use-in-Indiana/blob/master/Data.rds?raw=true). The data included: <br />
   - opioid_used_per_person = the amount of opioid used by person in each county from 2006-2012. <br />
